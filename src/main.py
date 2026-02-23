@@ -26,7 +26,8 @@ def main():
     parser.add_argument(
         "mode",
         choices=["trading", "discord", "all"],
-        default="trading",
+        nargs="?",  # Hace el argumento opcional
+        default="discord",  # Default a discord
         help="Modo de ejecución",
     )
     
