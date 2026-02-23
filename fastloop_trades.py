@@ -31,13 +31,16 @@ sys.stdout.reconfigure(line_buffering=True)
 # Optional: Trade Journal integration
 try:
     from tradejournal import log_trade
+
     JOURNAL_AVAILABLE = True
 except ImportError:
     try:
         from skills.tradejournal import log_trade
+
         JOURNAL_AVAILABLE = True
     except ImportError:
         JOURNAL_AVAILABLE = False
+
         def log_trade(*args, **kwargs):
             pass
 
@@ -46,26 +49,66 @@ except ImportError:
 # =============================================================================
 
 CONFIG_SCHEMA = {
-    "entry_threshold": {"default": 0.05, "env": "SIMMER_SPRINT_ENTRY", "type": float,
-                        "help": "Min price divergence from 50¢ to trigger trade"},
-    "min_momentum_pct": {"default": 0.5, "env": "SIMMER_SPRINT_MOMENTUM", "type": float,
-                         "help": "Min BTC % move in lookback window to trigger"},
-    "max_position": {"default": 5.0, "env": "SIMMER_SPRINT_MAX_POSITION", "type": float,
-                     "help": "Max $ per trade"},
-    "signal_source": {"default": "binance", "env": "SIMMER_SPRINT_SIGNAL", "type": str,
-                      "help": "Price feed source (binance, coingecko)"},
-    "lookback_minutes": {"default": 5, "env": "SIMMER_SPRINT_LOOKBACK", "type": int,
-                         "help": "Minutes of price history for momentum calc"},
-    "min_time_remaining": {"default": 60, "env": "SIMMER_SPRINT_MIN_TIME", "type": int,
-                           "help": "Skip fast_markets with less than this many seconds remaining"},
-    "asset": {"default": "BTC", "env": "SIMMER_SPRINT_ASSET", "type": str,
-              "help": "Asset to trade (BTC, ETH, SOL)"},
-    "window": {"default": "5m", "env": "SIMMER_SPRINT_WINDOW", "type": str,
-               "help": "Market window duration (5m or 15m)"},
-    "volume_confidence": {"default": True, "env": "SIMMER_SPRINT_VOL_CONF", "type": bool,
-                          "help": "Weight signal by volume (higher volume = more confident)"},
-    "daily_budget": {"default": 10.0, "env": "SIMMER_SPRINT_DAILY_BUDGET", "type": float,
-                     "help": "Max total spend per UTC day"},
+    "entry_threshold": {
+        "default": 0.05,
+        "env": "SIMMER_SPRINT_ENTRY",
+        "type": float,
+        "help": "Min price divergence from 50¢ to trigger trade",
+    },
+    "min_momentum_pct": {
+        "default": 0.5,
+        "env": "SIMMER_SPRINT_MOMENTUM",
+        "type": float,
+        "help": "Min BTC % move in lookback window to trigger",
+    },
+    "max_position": {
+        "default": 5.0,
+        "env": "SIMMER_SPRINT_MAX_POSITION",
+        "type": float,
+        "help": "Max $ per trade",
+    },
+    "signal_source": {
+        "default": "binance",
+        "env": "SIMMER_SPRINT_SIGNAL",
+        "type": str,
+        "help": "Price feed source (binance, coingecko)",
+    },
+    "lookback_minutes": {
+        "default": 5,
+        "env": "SIMMER_SPRINT_LOOKBACK",
+        "type": int,
+        "help": "Minutes of price history for momentum calc",
+    },
+    "min_time_remaining": {
+        "default": 60,
+        "env": "SIMMER_SPRINT_MIN_TIME",
+        "type": int,
+        "help": "Skip fast_markets with less than this many seconds remaining",
+    },
+    "asset": {
+        "default": "BTC",
+        "env": "SIMMER_SPRINT_ASSET",
+        "type": str,
+        "help": "Asset to trade (BTC, ETH, SOL)",
+    },
+    "window": {
+        "default": "5m",
+        "env": "SIMMER_SPRINT_WINDOW",
+        "type": str,
+        "help": "Market window duration (5m or 15m)",
+    },
+    "volume_confidence": {
+        "default": True,
+        "env": "SIMMER_SPRINT_VOL_CONF",
+        "type": bool,
+        "help": "Weight signal by volume (higher volume = more confident)",
+    },
+    "daily_budget": {
+        "default": 10.0,
+        "env": "SIMMER_SPRINT_DAILY_BUDGET",
+        "type": float,
+        "help": "Max total spend per UTC day",
+    },
 }
 
 TRADE_SOURCE = "sdk:fastloop"
@@ -90,6 +133,7 @@ ASSET_PATTERNS = {
 def _load_config(schema, skill_file, config_filename="config.json"):
     """Load config with priority: config.json > env vars > defaults."""
     from pathlib import Path
+
     config_path = Path(skill_file).parent / config_filename
     file_cfg = {}
     if config_path.exists():
@@ -119,12 +163,14 @@ def _load_config(schema, skill_file, config_filename="config.json"):
 
 def _get_config_path(skill_file, config_filename="config.json"):
     from pathlib import Path
+
     return Path(skill_file).parent / config_filename
 
 
 def _update_config(updates, skill_file, config_filename="config.json"):
     """Update config.json with new values."""
     from pathlib import Path
+
     config_path = Path(skill_file).parent / config_filename
     existing = {}
     if config_path.exists():
@@ -157,8 +203,10 @@ DAILY_BUDGET = cfg["daily_budget"]
 # Daily Budget Tracking
 # =============================================================================
 
+
 def _get_spend_path(skill_file):
     from pathlib import Path
+
     return Path(skill_file).parent / "daily_spend.json"
 
 
@@ -189,6 +237,7 @@ def _save_daily_spend(skill_file, spend_data):
 # =============================================================================
 
 _client = None
+
 
 def get_client():
     """Lazy-init SimmerClient singleton."""
@@ -237,6 +286,7 @@ def _api_request(url, method="GET", data=None, headers=None, timeout=15):
 # Sprint Market Discovery
 # =============================================================================
 
+
 def discover_fast_market_markets(asset="BTC", window="5m"):
     """Find active fast markets on Polymarket via Gamma API."""
     patterns = ASSET_PATTERNS.get(asset, ASSET_PATTERNS["BTC"])
@@ -259,15 +309,19 @@ def discover_fast_market_markets(asset="BTC", window="5m"):
             if not closed and slug:
                 # Parse end time from question (e.g., "5:30AM-5:35AM ET")
                 end_time = _parse_fast_market_end_time(m.get("question", ""))
-                markets.append({
-                    "question": m.get("question", ""),
-                    "slug": slug,
-                    "condition_id": condition_id,
-                    "end_time": end_time,
-                    "outcomes": m.get("outcomes", []),
-                    "outcome_prices": m.get("outcomePrices", "[]"),
-                    "fee_rate_bps": int(m.get("fee_rate_bps") or m.get("feeRateBps") or 0),
-                })
+                markets.append(
+                    {
+                        "question": m.get("question", ""),
+                        "slug": slug,
+                        "condition_id": condition_id,
+                        "end_time": end_time,
+                        "outcomes": m.get("outcomes", []),
+                        "outcome_prices": m.get("outcomePrices", "[]"),
+                        "fee_rate_bps": int(
+                            m.get("fee_rate_bps") or m.get("feeRateBps") or 0
+                        ),
+                    }
+                )
     return markets
 
 
@@ -276,8 +330,9 @@ def _parse_fast_market_end_time(question):
     e.g., 'Bitcoin Up or Down - February 15, 5:30AM-5:35AM ET' → datetime
     """
     import re
+
     # Match pattern: "Month Day, StartTime-EndTime ET"
-    pattern = r'(\w+ \d+),.*?-\s*(\d{1,2}:\d{2}(?:AM|PM))\s*ET'
+    pattern = r"(\w+ \d+),.*?-\s*(\d{1,2}:\d{2}(?:AM|PM))\s*ET"
     match = re.search(pattern, question)
     if not match:
         return None
@@ -318,12 +373,13 @@ def find_best_fast_market(markets):
 # CEX Price Signal
 # =============================================================================
 
+
 def get_binance_momentum(symbol="BTCUSDT", lookback_minutes=5):
     """Get price momentum from Binance public API.
     Returns: {momentum_pct, direction, price_now, price_then, avg_volume, candles}
     """
     url = (
-        f"https://api.binance.com/api/v3/klines"
+        f"https://data-api.binance.vision/api/v3/klines"
         f"?symbol={symbol}&interval=1m&limit={lookback_minutes}"
     )
     result = _api_request(url)
@@ -336,8 +392,8 @@ def get_binance_momentum(symbol="BTCUSDT", lookback_minutes=5):
         if len(candles) < 2:
             return None
 
-        price_then = float(candles[0][1])   # open of oldest candle
-        price_now = float(candles[-1][4])    # close of newest candle
+        price_then = float(candles[0][1])  # open of oldest candle
+        price_now = float(candles[-1][4])  # close of newest candle
         momentum_pct = ((price_now - price_then) / price_then) * 100
         direction = "up" if momentum_pct > 0 else "down"
 
@@ -404,6 +460,7 @@ def get_momentum(asset="BTC", source="binance", lookback=5):
 # Import & Trade
 # =============================================================================
 
+
 def import_fast_market_market(slug):
     """Import a fast market to Simmer. Returns market_id or None."""
     url = f"https://polymarket.com/event/{slug}"
@@ -424,7 +481,10 @@ def import_fast_market_market(slug):
     if status == "resolved":
         alternatives = result.get("active_alternatives", [])
         if alternatives:
-            return None, f"Market resolved. Try alternative: {alternatives[0].get('id')}"
+            return (
+                None,
+                f"Market resolved. Try alternative: {alternatives[0].get('id')}",
+            )
         return None, "Market resolved, no alternatives found"
 
     if status in ("imported", "already_exists"):
@@ -440,6 +500,7 @@ def get_market_details(market_id):
         if not market:
             return None
         from dataclasses import asdict
+
         return asdict(market)
     except Exception:
         return None
@@ -458,6 +519,7 @@ def get_positions():
     try:
         positions = get_client().get_positions()
         from dataclasses import asdict
+
         return [asdict(p) for p in positions]
     except Exception:
         return []
@@ -501,8 +563,14 @@ def calculate_position_size(max_size, smart_sizing=False):
 # Main Strategy Logic
 # =============================================================================
 
-def run_fast_market_strategy(dry_run=True, positions_only=False, show_config=False,
-                        smart_sizing=False, quiet=False):
+
+def run_fast_market_strategy(
+    dry_run=True,
+    positions_only=False,
+    show_config=False,
+    smart_sizing=False,
+    quiet=False,
+):
     """Run one cycle of the fast_market trading strategy."""
 
     def log(msg, force=False):
@@ -527,15 +595,17 @@ def run_fast_market_strategy(dry_run=True, positions_only=False, show_config=Fal
     log(f"  Min time left:    {MIN_TIME_REMAINING}s")
     log(f"  Volume weighting: {'✓' if VOLUME_CONFIDENCE else '✗'}")
     daily_spend = _load_daily_spend(__file__)
-    log(f"  Daily budget:     ${DAILY_BUDGET:.2f} (${daily_spend['spent']:.2f} spent today, {daily_spend['trades']} trades)")
+    log(
+        f"  Daily budget:     ${DAILY_BUDGET:.2f} (${daily_spend['spent']:.2f} spent today, {daily_spend['trades']} trades)"
+    )
 
     if show_config:
         config_path = _get_config_path(__file__)
         log(f"\n  Config file: {config_path}")
         log(f"\n  To change settings:")
-        log(f'    python fast_trader.py --set entry_threshold=0.08')
-        log(f'    python fast_trader.py --set asset=ETH')
-        log(f'    Or edit config.json directly')
+        log(f"    python fast_trader.py --set entry_threshold=0.08")
+        log(f"    python fast_trader.py --set asset=ETH")
+        log(f"    Or edit config.json directly")
         return
 
     # Initialize client early to validate API key
@@ -545,13 +615,19 @@ def run_fast_market_strategy(dry_run=True, positions_only=False, show_config=Fal
     if positions_only:
         log("\n📊 Sprint Positions:")
         positions = get_positions()
-        fast_market_positions = [p for p in positions if "up or down" in (p.get("question", "") or "").lower()]
+        fast_market_positions = [
+            p
+            for p in positions
+            if "up or down" in (p.get("question", "") or "").lower()
+        ]
         if not fast_market_positions:
             log("  No open fast market positions")
         else:
             for pos in fast_market_positions:
                 log(f"  • {pos.get('question', 'Unknown')[:60]}")
-                log(f"    YES: {pos.get('shares_yes', 0):.1f} | NO: {pos.get('shares_no', 0):.1f} | P&L: ${pos.get('pnl', 0):.2f}")
+                log(
+                    f"    YES: {pos.get('shares_yes', 0):.1f} | NO: {pos.get('shares_no', 0):.1f} | P&L: ${pos.get('pnl', 0):.2f}"
+                )
         return
 
     # Show portfolio if smart sizing
@@ -581,7 +657,9 @@ def run_fast_market_strategy(dry_run=True, positions_only=False, show_config=Fal
         return
 
     end_time = best.get("end_time")
-    remaining = (end_time - datetime.now(timezone.utc)).total_seconds() if end_time else 0
+    remaining = (
+        (end_time - datetime.now(timezone.utc)).total_seconds() if end_time else 0
+    )
     log(f"\n🎯 Selected: {best['question']}")
     log(f"  Expires in: {remaining:.0f}s")
 
@@ -640,7 +718,9 @@ def run_fast_market_strategy(dry_run=True, positions_only=False, show_config=Fal
     # Volume confidence adjustment
     vol_note = ""
     if VOLUME_CONFIDENCE and momentum["volume_ratio"] < 0.5:
-        log(f"  ⏸️  Low volume ({momentum['volume_ratio']:.2f}x avg) — weak signal, skip")
+        log(
+            f"  ⏸️  Low volume ({momentum['volume_ratio']:.2f}x avg) — weak signal, skip"
+        )
         if not quiet:
             print(f"📊 Summary: No trade (low volume)")
         return
@@ -661,9 +741,13 @@ def run_fast_market_strategy(dry_run=True, positions_only=False, show_config=Fal
         breakeven = buy_price / (win_profit + buy_price)
         fee_penalty = breakeven - 0.50  # how much fees shift breakeven above 50%
         min_divergence = fee_penalty + 0.02  # plus buffer
-        log(f"  Breakeven:        {breakeven:.1%} win rate (fee-adjusted, min divergence {min_divergence:.3f})")
+        log(
+            f"  Breakeven:        {breakeven:.1%} win rate (fee-adjusted, min divergence {min_divergence:.3f})"
+        )
         if divergence < min_divergence:
-            log(f"  ⏸️  Divergence {divergence:.3f} < fee-adjusted minimum {min_divergence:.3f} — skip")
+            log(
+                f"  ⏸️  Divergence {divergence:.3f} < fee-adjusted minimum {min_divergence:.3f} — skip"
+            )
             if not quiet:
                 print(f"📊 Summary: No trade (fees eat the edge)")
             return
@@ -675,13 +759,17 @@ def run_fast_market_strategy(dry_run=True, positions_only=False, show_config=Fal
     # Daily budget check
     remaining_budget = DAILY_BUDGET - daily_spend["spent"]
     if remaining_budget <= 0:
-        log(f"  ⏸️  Daily budget exhausted (${daily_spend['spent']:.2f}/${DAILY_BUDGET:.2f} spent) — skip")
+        log(
+            f"  ⏸️  Daily budget exhausted (${daily_spend['spent']:.2f}/${DAILY_BUDGET:.2f} spent) — skip"
+        )
         if not quiet:
             print(f"📊 Summary: No trade (daily budget exhausted)")
         return
     if position_size > remaining_budget:
         position_size = remaining_budget
-        log(f"  Budget cap: trade capped at ${position_size:.2f} (${daily_spend['spent']:.2f}/${DAILY_BUDGET:.2f} spent)")
+        log(
+            f"  Budget cap: trade capped at ${position_size:.2f} (${daily_spend['spent']:.2f}/${DAILY_BUDGET:.2f} spent)"
+        )
     if position_size < 0.50:
         log(f"  ⏸️  Remaining budget ${position_size:.2f} < $0.50 — skip")
         if not quiet:
@@ -692,7 +780,9 @@ def run_fast_market_strategy(dry_run=True, positions_only=False, show_config=Fal
     if price > 0:
         min_cost = MIN_SHARES_PER_ORDER * price
         if min_cost > position_size:
-            log(f"  ⚠️  Position ${position_size:.2f} too small for {MIN_SHARES_PER_ORDER} shares at ${price:.2f}")
+            log(
+                f"  ⚠️  Position ${position_size:.2f} too small for {MIN_SHARES_PER_ORDER} shares at ${price:.2f}"
+            )
             return
 
     log(f"  ✅ Signal: {side.upper()} — {trade_rationale}{vol_note}", force=True)
@@ -710,7 +800,10 @@ def run_fast_market_strategy(dry_run=True, positions_only=False, show_config=Fal
 
     if dry_run:
         est_shares = position_size / price if price > 0 else 0
-        log(f"  [DRY RUN] Would buy {side.upper()} ${position_size:.2f} (~{est_shares:.1f} shares)", force=True)
+        log(
+            f"  [DRY RUN] Would buy {side.upper()} ${position_size:.2f} (~{est_shares:.1f} shares)",
+            force=True,
+        )
     else:
         log(f"  Executing {side.upper()} trade for ${position_size:.2f}...", force=True)
         result = execute_trade(market_id, side, position_size)
@@ -718,7 +811,10 @@ def run_fast_market_strategy(dry_run=True, positions_only=False, show_config=Fal
         if result and result.get("success"):
             shares = result.get("shares_bought") or result.get("shares") or 0
             trade_id = result.get("trade_id")
-            log(f"  ✅ Bought {shares:.1f} {side.upper()} shares @ ${price:.3f}", force=True)
+            log(
+                f"  ✅ Bought {shares:.1f} {side.upper()} shares @ ${price:.3f}",
+                force=True,
+            )
 
             # Update daily spend
             daily_spend["spent"] += position_size
@@ -748,8 +844,12 @@ def run_fast_market_strategy(dry_run=True, positions_only=False, show_config=Fal
     if show_summary:
         print(f"\n📊 Summary:")
         print(f"  Sprint: {best['question'][:50]}")
-        print(f"  Signal: {direction} {momentum_pct:.3f}% | YES ${market_yes_price:.3f}")
-        print(f"  Action: {'DRY RUN' if dry_run else ('TRADED' if total_trades else 'FAILED')}")
+        print(
+            f"  Signal: {direction} {momentum_pct:.3f}% | YES ${market_yes_price:.3f}"
+        )
+        print(
+            f"  Action: {'DRY RUN' if dry_run else ('TRADED' if total_trades else 'FAILED')}"
+        )
 
 
 # =============================================================================
@@ -758,15 +858,35 @@ def run_fast_market_strategy(dry_run=True, positions_only=False, show_config=Fal
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Simmer FastLoop Trading Skill")
-    parser.add_argument("--live", action="store_true", help="Execute real trades (default is dry-run)")
-    parser.add_argument("--dry-run", action="store_true", help="(Default) Show opportunities without trading")
-    parser.add_argument("--positions", action="store_true", help="Show current fast market positions")
+    parser.add_argument(
+        "--live", action="store_true", help="Execute real trades (default is dry-run)"
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="(Default) Show opportunities without trading",
+    )
+    parser.add_argument(
+        "--positions", action="store_true", help="Show current fast market positions"
+    )
     parser.add_argument("--config", action="store_true", help="Show current config")
-    parser.add_argument("--set", action="append", metavar="KEY=VALUE",
-                        help="Update config (e.g., --set entry_threshold=0.08)")
-    parser.add_argument("--smart-sizing", action="store_true", help="Use portfolio-based position sizing")
-    parser.add_argument("--quiet", "-q", action="store_true",
-                        help="Only output on trades/errors (ideal for high-frequency runs)")
+    parser.add_argument(
+        "--set",
+        action="append",
+        metavar="KEY=VALUE",
+        help="Update config (e.g., --set entry_threshold=0.08)",
+    )
+    parser.add_argument(
+        "--smart-sizing",
+        action="store_true",
+        help="Use portfolio-based position sizing",
+    )
+    parser.add_argument(
+        "--quiet",
+        "-q",
+        action="store_true",
+        help="Only output on trades/errors (ideal for high-frequency runs)",
+    )
     args = parser.parse_args()
 
     if args.set:
