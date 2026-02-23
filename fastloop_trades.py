@@ -916,10 +916,23 @@ if __name__ == "__main__":
 
     dry_run = not args.live
 
-    run_fast_market_strategy(
-        dry_run=dry_run,
-        positions_only=args.positions,
-        show_config=args.config,
-        smart_sizing=args.smart_sizing,
-        quiet=args.quiet,
-    )
+    import time
+
+    while True:
+        try:
+            run_fast_market_strategy(
+                dry_run=dry_run,
+                positions_only=args.positions,
+                show_config=args.config,
+                smart_sizing=args.smart_sizing,
+                quiet=args.quiet,
+            )
+        except Exception as e:
+            print(f"Error in strategy loop: {e}")
+
+        # If user just asked for positions or config, exit immediately
+        if args.positions or args.config:
+            break
+
+        print("\n⏳ Sleeping for 60 seconds before next check...")
+        time.sleep(60)
