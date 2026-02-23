@@ -1,1 +1,1 @@
-Procfileworker: python fastloop_trades.py --live
+worker: python fastloop_trades.py --live
