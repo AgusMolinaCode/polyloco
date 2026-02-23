@@ -1,7 +1,5 @@
-# Procfile para Railway - MICRO GANANCIAS
+# Procfile para Railway - VELOCITY TRADER ONLY
+# Solo estrategia de alta velocidad 5-15 minutos
 
-# Fast Loop Micro Trader (prioridad alta)
-fast: python -m src.bots.fast_loop_micro
-
-# Bot de Discord (notificaciones)
-discord: python -m src.discord.bot
+# Velocity Trader (BTC, ETH, SOL)
+velocity: python -m src.bots.velocity_trader
