@@ -24,19 +24,15 @@ class SimmerConfig:
         )
 
 
-@dataclass  
+@dataclass
 class DiscordConfig:
-    """Configuración de Discord Bot"""
-    token: str
-    channel_id: int
-    guild_id: Optional[int] = None
+    """Configuración de Discord"""
+    webhook_url: str
     
     @classmethod
     def from_env(cls) -> "DiscordConfig":
         return cls(
-            token=os.getenv("DISCORD_TOKEN", ""),
-            channel_id=int(os.getenv("DISCORD_CHANNEL_ID", "0")),
-            guild_id=int(os.getenv("DISCORD_GUILD_ID", "0")) if os.getenv("DISCORD_GUILD_ID") else None,
+            webhook_url=os.getenv("DISCORD_WEBHOOK_URL", ""),
         )
 
 
