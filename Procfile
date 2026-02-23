@@ -1,5 +1,7 @@
-# Procfile para Railway
-# Define los procesos a ejecutar
+# Procfile para Railway - MICRO GANANCIAS
 
-# Bot de Discord + trading
+# Fast Loop Micro Trader (prioridad alta)
+fast: python -m src.bots.fast_loop_micro
+
+# Bot de Discord (notificaciones)
 discord: python -m src.discord.bot
