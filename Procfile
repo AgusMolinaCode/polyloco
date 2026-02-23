@@ -1,5 +1,5 @@
 # Procfile para Railway
 # Define los procesos a ejecutar
 
-# Bot de trading + notificaciones webhook
-trading: python -m src.main trading
+# Bot de Discord + trading
+discord: python -m src.discord.bot
