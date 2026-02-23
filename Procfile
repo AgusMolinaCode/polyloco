@@ -1,0 +1,1 @@
+Procfileworker: python fastloop_trades.py --live
