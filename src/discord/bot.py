@@ -13,10 +13,9 @@ class PolyLocoBot(commands.Bot):
     """Bot de Discord para monitorear y controlar trading"""
     
     def __init__(self):
-        # Usar intents básicos (no privilegiados)
+        # Usar intents con message_content (ahora habilitado en Discord)
         intents = discord.Intents.default()
-        # No activar message_content (requiere privilegio)
-        # intents.message_content = True
+        intents.message_content = True
         
         super().__init__(
             command_prefix="!",
