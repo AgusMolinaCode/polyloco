@@ -129,8 +129,18 @@ class FastLoopMicroTrader(BaseBot):
             self.logger.info(f"Momentum {momentum:.3f}% < {self.min_momentum}%")
             return opportunities
         
-        # Buscar mercados fast de BTC
-        markets = self.trader.get_markets(query="bitcoin up or down", status="active")
+        # Buscar mercados fast de BTC (sin query, filtrar después)
+        markets = self.trader.get_markets(status="active", limit=100)
+        
+        # Filtrar solo mercados de Bitcoin
+        btc_markets = []
+        for market in markets:
+            question = getattr(market, 'question', '').lower()
+            if "bitcoin" in question or "btc" in question:
+                if "5 minute" in question or "15 minute" in question:
+                    btc_markets.append(market)
+        
+        markets = btc_markets
         
         for market in markets:
             # Solo mercados 5min o 15min
@@ -163,7 +173,7 @@ class FastLoopMicroTrader(BaseBot):
                 continue
             
             opportunity = {
-                "market_id": market.get("market_id") or market.get("id"),
+                "market_id": getattr(market, "market_id", None) or getattr(market, "id", None),
                 "market_name": market.get("question", "Unknown"),
                 "side": side,
                 "entry_price": current_price,

@@ -41,10 +41,11 @@ class SimmerTrader:
             print(f"Error obteniendo posiciones: {e}")
             return []
     
-    def get_markets(self, query: str = "", status: str = "active", limit: int = 100) -> List[Dict]:
+    def get_markets(self, status: str = "active", limit: int = 100) -> List[Dict]:
         """Buscar mercados"""
         try:
-            return self.client.get_markets(q=query, status=status, limit=limit)
+            # El SDK de Simmer no acepta query, solo status y limit
+            return self.client.get_markets(status=status, limit=limit)
         except Exception as e:
             print(f"Error buscando mercados: {e}")
             return []
